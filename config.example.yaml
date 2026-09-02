@@ -1,0 +1,16 @@
+# Copy this file to config.yaml (gitignored) and fill in what you need.
+# Every key is optional -- FinPipe works with zero configuration for local
+# fetches; Google Sheets export needs the two google_* keys below (or the
+# equivalent environment variables -- see .env.example).
+
+# Where normalized datasets are saved locally.
+data_dir: data
+
+# Spreadsheet ID from its URL:
+# https://docs.google.com/spreadsheets/d/<THIS_PART>/edit
+google_sheet_id: null
+
+# Path to a Google service-account JSON key file. The service account's
+# email must be shared as an editor on the target spreadsheet.
+# See README.md "Google Sheets setup" for how to create one.
+google_credentials_path: null
