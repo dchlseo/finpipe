@@ -23,8 +23,11 @@ _WORKSHEET_TITLES: dict[DatasetType, str] = {
     DatasetType.PRICE: "Price",
     DatasetType.DIVIDENDS: "Dividends",
     DatasetType.INCOME_STATEMENT: "Income Statement",
+    DatasetType.INCOME_STATEMENT_QUARTERLY: "Income Statement (Quarterly)",
     DatasetType.BALANCE_SHEET: "Balance Sheet",
+    DatasetType.BALANCE_SHEET_QUARTERLY: "Balance Sheet (Quarterly)",
     DatasetType.CASHFLOW: "Cash Flow",
+    DatasetType.CASHFLOW_QUARTERLY: "Cash Flow (Quarterly)",
     DatasetType.FUNDAMENTALS: "Fundamentals",
     DatasetType.MACRO_SERIES: "Macro Series",
 }

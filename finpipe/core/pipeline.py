@@ -43,6 +43,7 @@ def run_fetch(raw_symbol: str, config: FinPipeConfig, export_to_sheets: bool = F
             continue
 
         outcomes.append(FetchOutcome(dataset_type, "fetched"))
+        frame["source"] = adapter.name
         fetched_frames[dataset_type] = frame
 
     storage.save_metadata(metadata)

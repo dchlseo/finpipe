@@ -104,8 +104,11 @@ class YahooSource(SourceAdapter):
         DatasetType.PRICE,
         DatasetType.DIVIDENDS,
         DatasetType.INCOME_STATEMENT,
+        DatasetType.INCOME_STATEMENT_QUARTERLY,
         DatasetType.BALANCE_SHEET,
+        DatasetType.BALANCE_SHEET_QUARTERLY,
         DatasetType.CASHFLOW,
+        DatasetType.CASHFLOW_QUARTERLY,
     }
 
     def _ticker(self, symbol: str) -> yf.Ticker:
@@ -154,11 +157,20 @@ class YahooSource(SourceAdapter):
     def fetch_income_statement(self, symbol: str) -> Optional[pd.DataFrame]:
         return self._fetch_statement(symbol, "income_stmt")
 
+    def fetch_income_statement_quarterly(self, symbol: str) -> Optional[pd.DataFrame]:
+        return self._fetch_statement(symbol, "quarterly_income_stmt")
+
     def fetch_balance_sheet(self, symbol: str) -> Optional[pd.DataFrame]:
         return self._fetch_statement(symbol, "balance_sheet")
 
+    def fetch_balance_sheet_quarterly(self, symbol: str) -> Optional[pd.DataFrame]:
+        return self._fetch_statement(symbol, "quarterly_balance_sheet")
+
     def fetch_cashflow(self, symbol: str) -> Optional[pd.DataFrame]:
         return self._fetch_statement(symbol, "cashflow")
+
+    def fetch_cashflow_quarterly(self, symbol: str) -> Optional[pd.DataFrame]:
+        return self._fetch_statement(symbol, "quarterly_cashflow")
 
     def _fetch_statement(self, symbol: str, attr: str) -> Optional[pd.DataFrame]:
         ticker = self._ticker(symbol)

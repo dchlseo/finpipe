@@ -124,10 +124,15 @@ data/
         6758.T/
             metadata.json
             price.csv
-            income_statement.csv
-            balance_sheet.csv
-            cashflow.csv
             dividends.csv
+            annual/
+                income_statement.csv
+                balance_sheet.csv
+                cashflow.csv
+            quarterly/
+                income_statement.csv
+                balance_sheet.csv
+                cashflow.csv
         GOOGL/
             ...
         005930.KS/
@@ -140,6 +145,14 @@ data/
 
 No file is written for a dataset that isn't supported or has no data --
 `data/crypto/BTC-USD/` really only contains those two files.
+
+Income statement, balance sheet, and cash flow are each fetched for both
+annual and quarterly periods and saved into separate `annual/` and
+`quarterly/` subfolders under the instrument directory.
+
+Every saved CSV -- price, dividends, and each financial statement -- has a
+trailing `source` column identifying which provider produced that row
+(e.g. `yahoo`).
 
 `metadata.json` looks like:
 

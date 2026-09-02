@@ -53,3 +53,40 @@ def test_save_dataset_empty_frame_writes_nothing(tmp_path):
     path = storage.save_dataset(meta, DatasetType.DIVIDENDS, pd.DataFrame())
 
     assert path is None
+
+
+def test_save_dataset_annual_statement_writes_under_annual_subfolder(tmp_path):
+    storage = LocalStorage(tmp_path)
+    meta = _make_meta()
+    frame = pd.DataFrame({"period_end": pd.to_datetime(["2024-12-31"]), "total_revenue": [100.0]})
+
+    path = storage.save_dataset(meta, DatasetType.BALANCE_SHEET, frame)
+
+    assert path == tmp_path / "crypto" / "BTC-USD" / "annual" / "balance_sheet.csv"
+    assert path.exists()
+
+
+def test_save_dataset_quarterly_statement_writes_under_quarterly_subfolder(tmp_path):
+    storage = LocalStorage(tmp_path)
+    meta = _make_meta()
+    frame = pd.DataFrame({"period_end": pd.to_datetime(["2024-06-30"]), "total_revenue": [25.0]})
+
+    path = storage.save_dataset(meta, DatasetType.BALANCE_SHEET_QUARTERLY, frame)
+
+    assert path == tmp_path / "crypto" / "BTC-USD" / "quarterly" / "balance_sheet.csv"
+    assert path.exists()
+
+
+def test_save_dataset_removes_old_flat_statement_file(tmp_path):
+    storage = LocalStorage(tmp_path)
+    meta = _make_meta()
+    instrument_dir = storage.instrument_dir(meta)
+    instrument_dir.mkdir(parents=True)
+    old_flat_path = instrument_dir / "balance_sheet.csv"
+    old_flat_path.write_text("stale,data\n1,2\n", encoding="utf-8")
+
+    frame = pd.DataFrame({"period_end": pd.to_datetime(["2024-12-31"]), "total_revenue": [100.0]})
+    storage.save_dataset(meta, DatasetType.BALANCE_SHEET, frame)
+
+    assert not old_flat_path.exists()
+    assert (instrument_dir / "annual" / "balance_sheet.csv").exists()

@@ -49,10 +49,19 @@ class SourceAdapter(ABC):
     def fetch_income_statement(self, symbol: str) -> Optional[pd.DataFrame]:
         raise NotImplementedError
 
+    def fetch_income_statement_quarterly(self, symbol: str) -> Optional[pd.DataFrame]:
+        raise NotImplementedError
+
     def fetch_balance_sheet(self, symbol: str) -> Optional[pd.DataFrame]:
         raise NotImplementedError
 
+    def fetch_balance_sheet_quarterly(self, symbol: str) -> Optional[pd.DataFrame]:
+        raise NotImplementedError
+
     def fetch_cashflow(self, symbol: str) -> Optional[pd.DataFrame]:
+        raise NotImplementedError
+
+    def fetch_cashflow_quarterly(self, symbol: str) -> Optional[pd.DataFrame]:
         raise NotImplementedError
 
     def fetch_fundamentals(self, symbol: str) -> Optional[pd.DataFrame]:
@@ -69,8 +78,11 @@ DATASET_FETCH_METHODS: dict[DatasetType, str] = {
     DatasetType.PRICE: "fetch_price",
     DatasetType.DIVIDENDS: "fetch_dividends",
     DatasetType.INCOME_STATEMENT: "fetch_income_statement",
+    DatasetType.INCOME_STATEMENT_QUARTERLY: "fetch_income_statement_quarterly",
     DatasetType.BALANCE_SHEET: "fetch_balance_sheet",
+    DatasetType.BALANCE_SHEET_QUARTERLY: "fetch_balance_sheet_quarterly",
     DatasetType.CASHFLOW: "fetch_cashflow",
+    DatasetType.CASHFLOW_QUARTERLY: "fetch_cashflow_quarterly",
     DatasetType.FUNDAMENTALS: "fetch_fundamentals",
     DatasetType.MACRO_SERIES: "fetch_macro_series",
 }

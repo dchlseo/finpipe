@@ -26,8 +26,11 @@ class DatasetType(str, Enum):
     PRICE = "price"
     DIVIDENDS = "dividends"
     INCOME_STATEMENT = "income_statement"
+    INCOME_STATEMENT_QUARTERLY = "income_statement_quarterly"
     BALANCE_SHEET = "balance_sheet"
+    BALANCE_SHEET_QUARTERLY = "balance_sheet_quarterly"
     CASHFLOW = "cashflow"
+    CASHFLOW_QUARTERLY = "cashflow_quarterly"
     FUNDAMENTALS = "fundamentals"
     MACRO_SERIES = "macro_series"
 

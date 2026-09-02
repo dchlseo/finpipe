@@ -17,6 +17,20 @@ import pandas as pd
 from finpipe.core.models import DatasetType, InstrumentMetadata
 from finpipe.core.paths import safe_symbol
 
+# Financial statements are split into annual/quarterly subfolders rather than
+# flat files. The filename stem is deliberately decoupled from
+# `dataset_type.value` (e.g. "balance_sheet", not "balance_sheet_quarterly")
+# -- the subfolder already encodes the period, so the filename stays the
+# plain statement name in both.
+_STATEMENT_LAYOUT: dict[DatasetType, tuple[str, str]] = {
+    DatasetType.INCOME_STATEMENT: ("annual", "income_statement"),
+    DatasetType.BALANCE_SHEET: ("annual", "balance_sheet"),
+    DatasetType.CASHFLOW: ("annual", "cashflow"),
+    DatasetType.INCOME_STATEMENT_QUARTERLY: ("quarterly", "income_statement"),
+    DatasetType.BALANCE_SHEET_QUARTERLY: ("quarterly", "balance_sheet"),
+    DatasetType.CASHFLOW_QUARTERLY: ("quarterly", "cashflow"),
+}
+
 
 class LocalStorage:
     def __init__(self, base_dir: Path):
@@ -37,8 +51,24 @@ class LocalStorage:
     ) -> Optional[Path]:
         if frame is None or frame.empty:
             return None
-        target_dir = self.instrument_dir(meta)
+        instrument_dir = self.instrument_dir(meta)
+
+        layout = _STATEMENT_LAYOUT.get(dataset_type)
+        if layout is not None:
+            subfolder, stem = layout
+            target_dir = instrument_dir / subfolder
+            filename = f"{stem}.csv"
+            # These statements used to be saved flat at <instrument_dir>/<stem>.csv;
+            # remove the old file so a stale duplicate isn't left behind once the
+            # nested annual/quarterly file is written.
+            old_flat_path = instrument_dir / filename
+            if old_flat_path.exists():
+                old_flat_path.unlink()
+        else:
+            target_dir = instrument_dir
+            filename = f"{dataset_type.value}.csv"
+
         target_dir.mkdir(parents=True, exist_ok=True)
-        path = target_dir / f"{dataset_type.value}.csv"
+        path = target_dir / filename
         frame.to_csv(path, index=False)
         return path

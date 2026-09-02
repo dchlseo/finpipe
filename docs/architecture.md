@@ -125,6 +125,11 @@ CLI code already in place for equities and crypto.
    (and add the type to their `SUPPORTED_DATASETS`); adapters that don't
    support it need no change -- the pipeline already treats an unlisted
    type as "not supported by source".
+4. If the new type is a periodicity/layout variant of an existing dataset
+   (e.g. the quarterly counterpart of an annual statement), also add an
+   entry to `_STATEMENT_LAYOUT` in `storage/local.py` so it's written to
+   the right subfolder/filename instead of falling back to a flat
+   `<dataset_type>.csv`.
 
 ## How future analytics should fit in
 

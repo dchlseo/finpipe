@@ -19,6 +19,9 @@ class FakeTicker:
         self.income_stmt = income_stmt if income_stmt is not None else pd.DataFrame()
         self.balance_sheet = pd.DataFrame()
         self.cashflow = pd.DataFrame()
+        self.quarterly_income_stmt = pd.DataFrame()
+        self.quarterly_balance_sheet = pd.DataFrame()
+        self.quarterly_cashflow = pd.DataFrame()
 
     def history(self, **kwargs):
         return self._history
@@ -86,3 +89,28 @@ def test_yahoo_supported_datasets_excludes_macro_and_fundamentals():
     assert DatasetType.MACRO_SERIES not in YahooSource.SUPPORTED_DATASETS
     assert DatasetType.FUNDAMENTALS not in YahooSource.SUPPORTED_DATASETS
     assert DatasetType.PRICE in YahooSource.SUPPORTED_DATASETS
+
+
+def test_yahoo_supported_datasets_includes_quarterly_statements():
+    assert DatasetType.INCOME_STATEMENT_QUARTERLY in YahooSource.SUPPORTED_DATASETS
+    assert DatasetType.BALANCE_SHEET_QUARTERLY in YahooSource.SUPPORTED_DATASETS
+    assert DatasetType.CASHFLOW_QUARTERLY in YahooSource.SUPPORTED_DATASETS
+
+
+def test_fetch_quarterly_statements_read_quarterly_attrs(patch_ticker):
+    quarterly_cols = pd.to_datetime(["2024-06-30"])
+    fake = FakeTicker(info={"longName": "X"})
+    fake.quarterly_income_stmt = pd.DataFrame({quarterly_cols[0]: [10.0]}, index=["Total Revenue"])
+    fake.quarterly_balance_sheet = pd.DataFrame({quarterly_cols[0]: [20.0]}, index=["Total Assets"])
+    fake.quarterly_cashflow = pd.DataFrame({quarterly_cols[0]: [30.0]}, index=["Operating Cash Flow"])
+    patch_ticker(fake)
+
+    source = YahooSource()
+
+    income = source.fetch_income_statement_quarterly("GOOGL")
+    balance = source.fetch_balance_sheet_quarterly("GOOGL")
+    cashflow = source.fetch_cashflow_quarterly("GOOGL")
+
+    assert income is not None and income["total_revenue"].iloc[0] == 10.0
+    assert balance is not None and balance["total_assets"].iloc[0] == 20.0
+    assert cashflow is not None and cashflow["operating_cash_flow"].iloc[0] == 30.0
