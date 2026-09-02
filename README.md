@@ -56,7 +56,7 @@ type.
 ```bash
 git clone <this-repo-url>
 cd finpipe
-python -m venv .venv
+python -m venv .venv      # this creates a python virtual environment called .venv     
 .venv\Scripts\activate      # Windows
 # source .venv/bin/activate # macOS/Linux
 pip install -r requirements.txt
@@ -73,7 +73,7 @@ pip install -e .
 
 ```bash
 finpipe fetch 6758.T          # Sony Group (Tokyo)
-finpipe fetch GOOGL           # Alphabet
+finpipe fetch GOOGL           # Alphabet (Nasdaq. CASE INSENSITIVE)
 finpipe fetch 005930.KS       # Samsung Electronics (Korea)
 finpipe fetch BTC-USD         # Bitcoin
 ```
