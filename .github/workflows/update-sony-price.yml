@@ -1,0 +1,42 @@
+name: Update Sony Price
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-price:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install FinPipe
+        run: pip install -e .
+
+      - name: Create Google credentials file
+        shell: bash
+        run: |
+          printf '%s' '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > /tmp/google-credentials.json
+
+      - name: Create FinPipe config
+        shell: bash
+        run: |
+          cat > config.yaml <<EOF
+          data_dir: data
+          google_sheet_id: "${{ secrets.GOOGLE_SHEET_ID }}"
+          google_credentials_path: "/tmp/google-credentials.json"
+
+          google_sheets:
+            worksheet_mapping:
+              price: "99_DailyPriceData"
+          EOF
+
+      - name: Update Sony price data
+        run: |
+          finpipe fetch 6758.T --datasets price --sheets
