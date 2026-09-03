@@ -2,6 +2,8 @@ name: Update Sony Price
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * 1-5"
 
 jobs:
   update-price:
