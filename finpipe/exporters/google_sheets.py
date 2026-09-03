@@ -17,6 +17,7 @@ from typing import Optional
 
 import gspread
 import pandas as pd
+from gspread.utils import ValueInputOption
 
 from finpipe.core.config import FinPipeConfig
 from finpipe.core.exceptions import ExportError
@@ -36,13 +37,34 @@ _WORKSHEET_TITLES: dict[DatasetType, str] = {
 }
 
 
-def _frame_to_values(frame: pd.DataFrame) -> list[list]:
+def _frame_to_values(frame: pd.DataFrame) -> tuple[list[list], list[int]]:
+    """Flatten a DataFrame into a values grid for `gspread`, plus the
+    0-based column indices that hold dates.
+
+    Datetime columns are stringified to ISO ``YYYY-MM-DD`` so the grid stays
+    JSON-serializable; the returned indices let the caller re-write just
+    those columns with `USER_ENTERED` semantics so Sheets stores them as
+    real date values instead of text (see `_write_worksheet`).
+    """
     df = frame.copy()
-    for col in df.columns:
+    date_col_indices = []
+    for i, col in enumerate(df.columns):
         if pd.api.types.is_datetime64_any_dtype(df[col]):
             df[col] = df[col].dt.strftime("%Y-%m-%d")
+            date_col_indices.append(i)
     df = df.astype(object).where(pd.notnull(df), "")
-    return [list(map(str, df.columns))] + df.values.tolist()
+    values = [list(map(str, df.columns))] + df.values.tolist()
+    return values, date_col_indices
+
+
+def _col_letter(index: int) -> str:
+    """0-based column index -> spreadsheet column letter (0 -> 'A', 25 -> 'Z', 26 -> 'AA', ...)."""
+    letters = ""
+    n = index + 1
+    while n > 0:
+        n, rem = divmod(n - 1, 26)
+        letters = chr(65 + rem) + letters
+    return letters
 
 
 def _metadata_values(meta: InstrumentMetadata) -> list[list]:
@@ -88,9 +110,16 @@ class GoogleSheetsExporter:
             title = self._worksheet_titles.get(dataset_type)
             if title is None:
                 continue
-            self._write_worksheet(spreadsheet, title, _frame_to_values(frame))
+            values, date_col_indices = _frame_to_values(frame)
+            self._write_worksheet(spreadsheet, title, values, date_col_indices)
 
-    def _write_worksheet(self, spreadsheet, title: str, values: list[list]) -> None:
+    def _write_worksheet(
+        self,
+        spreadsheet,
+        title: str,
+        values: list[list],
+        date_col_indices: Optional[list[int]] = None,
+    ) -> None:
         try:
             try:
                 worksheet = spreadsheet.worksheet(title)
@@ -100,7 +129,27 @@ class GoogleSheetsExporter:
                 )
             worksheet.clear()
             worksheet.update(values)
+            for col in date_col_indices or []:
+                self._write_date_column(worksheet, values, col)
         except ExportError:
             raise
         except Exception as exc:
             raise ExportError(f"Failed writing '{title}' worksheet: {exc}") from exc
+
+    def _write_date_column(self, worksheet, values: list[list], col: int) -> None:
+        """Re-write one already-written column with `USER_ENTERED` input so
+        Sheets stores its ISO date strings as real date values (recognized
+        by `MAX`, `XLOOKUP`, `YEAR`, `EDATE`, etc.) instead of plain text,
+        then pin its display format so it still reads as `YYYY-MM-DD`
+        regardless of the spreadsheet's locale.
+
+        Scoped to a single known-datetime column so no other column's
+        values -- numeric or text -- are ever re-parsed by Sheets.
+        """
+        if len(values) < 2:
+            return  # header only, nothing to re-parse as a date
+        letter = _col_letter(col)
+        cell_range = f"{letter}2:{letter}{len(values)}"
+        column_values = [[row[col]] for row in values[1:]]
+        worksheet.update(column_values, cell_range, value_input_option=ValueInputOption.user_entered)
+        worksheet.format(cell_range, {"numberFormat": {"type": "DATE", "pattern": "yyyy-mm-dd"}})
