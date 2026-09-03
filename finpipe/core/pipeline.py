@@ -6,6 +6,8 @@ deliberately thin -- each step's real logic lives in its own module.
 
 from __future__ import annotations
 
+from typing import Optional
+
 from finpipe.core import resolver
 from finpipe.core.config import FinPipeConfig
 from finpipe.core.exceptions import DatasetUnavailable, ExportError
@@ -15,7 +17,19 @@ from finpipe.sources.base import DATASET_FETCH_METHODS
 from finpipe.storage.local import LocalStorage
 
 
-def run_fetch(raw_symbol: str, config: FinPipeConfig, export_to_sheets: bool = False) -> FetchResult:
+def run_fetch(
+    raw_symbol: str,
+    config: FinPipeConfig,
+    export_to_sheets: bool = False,
+    datasets: Optional[set[DatasetType]] = None,
+) -> FetchResult:
+    """Fetch, save, and (optionally) export data for one instrument.
+
+    `datasets`, if given, restricts fetching to that subset of dataset
+    types -- only those types appear in the result's outcomes. Leave it
+    `None` (the default) to fetch everything the resolved source supports,
+    matching the pre-existing behavior.
+    """
     adapter, symbol = resolver.resolve(raw_symbol)
 
     # Fatal if this fails -- an invalid ticker means there's nothing to save.
@@ -25,7 +39,13 @@ def run_fetch(raw_symbol: str, config: FinPipeConfig, export_to_sheets: bool = F
     outcomes: list[FetchOutcome] = [FetchOutcome(DatasetType.METADATA, "fetched")]
     fetched_frames = {}
 
-    for dataset_type, method_name in DATASET_FETCH_METHODS.items():
+    fetch_items = (
+        DATASET_FETCH_METHODS.items()
+        if datasets is None
+        else [(dt, m) for dt, m in DATASET_FETCH_METHODS.items() if dt in datasets]
+    )
+
+    for dataset_type, method_name in fetch_items:
         if dataset_type not in adapter.SUPPORTED_DATASETS:
             outcomes.append(FetchOutcome(dataset_type, "not_supported"))
             continue

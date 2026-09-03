@@ -116,6 +116,22 @@ has no additional effect -- local save is always on in the MVP; there's no
 `--no-local`. `--config PATH` points at a config file other than the
 default `./config.yaml`.
 
+Use `--datasets` to fetch (and, combined with `--sheets`, export) only
+specific dataset types instead of everything the source supports:
+
+```bash
+finpipe fetch 6758.T --datasets price
+finpipe fetch 6758.T --datasets price dividends
+finpipe fetch 6758.T --datasets price --sheets
+```
+
+Valid names are `price`, `dividends`, `income_statement`,
+`income_statement_quarterly`, `balance_sheet`, `balance_sheet_quarterly`,
+`cashflow`, `cashflow_quarterly`, `fundamentals`, `macro_series` --
+`metadata` is always fetched and isn't a selectable value. An unknown name
+is rejected with an error listing the valid options. Omitting `--datasets`
+preserves the current behavior of fetching everything the source supports.
+
 ## Output
 
 ```
@@ -194,6 +210,20 @@ without it.
    Sheet`, `Cash Flow`, `Dividends`), created if missing and overwritten
    on every run. Worksheet structure is generic -- there's no
    instrument-specific layout.
+
+To use different worksheet titles (e.g. an existing workbook with sheets
+named `99_DailyPriceData` instead of `Price`), add a
+`google_sheets.worksheet_mapping` section to `config.yaml`:
+
+```yaml
+google_sheets:
+  worksheet_mapping:
+    price: "99_DailyPriceData"
+```
+
+Only the dataset types listed are renamed; any dataset type left out keeps
+its built-in default title. See [`config.example.yaml`](config.example.yaml)
+for the full set of dataset-type keys.
 
 Never commit `config.yaml` or your credentials JSON file -- both are
 gitignored by default.

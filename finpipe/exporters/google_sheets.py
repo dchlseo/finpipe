@@ -2,10 +2,13 @@
 
 Generic by design: a dataset type maps to a worksheet title, the worksheet
 is cleared and rewritten with the normalized DataFrame. There is no
-instrument-specific worksheet layout. Any failure here (missing config,
-missing credentials file, network/API failure) raises `ExportError` with a
-plain-English message -- callers are expected to treat it as non-fatal to
-the local save, which always happens first.
+instrument-specific worksheet layout. Default titles live in
+`_WORKSHEET_TITLES` below; `config.google_sheets_worksheet_mapping` (from
+`google_sheets.worksheet_mapping` in config.yaml) overrides them per dataset
+type, leaving unlisted types on their default. Any failure here (missing
+config, missing credentials file, network/API failure) raises `ExportError`
+with a plain-English message -- callers are expected to treat it as
+non-fatal to the local save, which always happens first.
 """
 
 from __future__ import annotations
@@ -49,6 +52,12 @@ def _metadata_values(meta: InstrumentMetadata) -> list[list]:
 class GoogleSheetsExporter:
     def __init__(self, config: FinPipeConfig):
         self.config = config
+        # Custom worksheet titles from config only override the dataset
+        # types they name; everything else keeps its built-in default.
+        self._worksheet_titles: dict[DatasetType, str] = {
+            **_WORKSHEET_TITLES,
+            **config.google_sheets_worksheet_mapping,
+        }
 
     def export(
         self, meta: InstrumentMetadata, datasets: dict[DatasetType, Optional[pd.DataFrame]]
@@ -76,7 +85,7 @@ class GoogleSheetsExporter:
         for dataset_type, frame in datasets.items():
             if frame is None or frame.empty:
                 continue
-            title = _WORKSHEET_TITLES.get(dataset_type)
+            title = self._worksheet_titles.get(dataset_type)
             if title is None:
                 continue
             self._write_worksheet(spreadsheet, title, _frame_to_values(frame))

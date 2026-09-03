@@ -14,3 +14,15 @@ google_sheet_id: null
 # email must be shared as an editor on the target spreadsheet.
 # See README.md "Google Sheets setup" for how to create one.
 google_credentials_path: null
+
+# Optional: override the default worksheet titles used when exporting to
+# Google Sheets. Only the dataset types listed here are renamed -- anything
+# omitted keeps its built-in default (Price, Dividends, Income Statement,
+# Balance Sheet, Cash Flow, ...). Keys must match a DatasetType value
+# exactly -- note it's "cashflow" (one word), not "cash_flow".
+# google_sheets:
+#   worksheet_mapping:
+#     price: "99_DailyPriceData"
+#     income_statement: "99_IncomeStatement"
+#     balance_sheet: "99_BalanceSheet"
+#     cashflow: "99_CashFlow"

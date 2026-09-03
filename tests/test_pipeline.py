@@ -58,3 +58,52 @@ def test_run_fetch_reports_saved_dir_and_not_supported_datasets(tmp_path, patch_
     assert result.saved_dir == str(tmp_path / "equity" / "FAKE")
     dividends_outcome = next(o for o in result.outcomes if o.dataset_type == DatasetType.DIVIDENDS)
     assert dividends_outcome.status == "not_supported"
+
+
+def test_run_fetch_without_datasets_preserves_full_behavior(tmp_path, patch_resolver):
+    """Regression pin: omitting `datasets` must fetch/report every dataset
+    type, exactly like before the --datasets filter existed."""
+    patch_resolver(FakeAdapter())
+    config = FinPipeConfig(data_dir=tmp_path)
+
+    result = pipeline_module.run_fetch("FAKE", config)
+
+    reported_types = {o.dataset_type for o in result.outcomes}
+    assert reported_types == set(pipeline_module.DATASET_FETCH_METHODS) | {DatasetType.METADATA}
+
+
+def test_run_fetch_with_datasets_filter_only_reports_selected_types(tmp_path, patch_resolver):
+    patch_resolver(FakeAdapter())
+    config = FinPipeConfig(data_dir=tmp_path)
+
+    result = pipeline_module.run_fetch("FAKE", config, datasets={DatasetType.PRICE})
+
+    reported_types = {o.dataset_type for o in result.outcomes}
+    assert reported_types == {DatasetType.METADATA, DatasetType.PRICE}
+
+
+def test_run_fetch_datasets_filter_still_reports_not_supported_for_selected_type(
+    tmp_path, patch_resolver
+):
+    """Selecting a type the adapter doesn't support still reports it as
+    not_supported, scoped to just that type -- no crash, no silent skip."""
+    patch_resolver(FakeAdapter())
+    config = FinPipeConfig(data_dir=tmp_path)
+
+    result = pipeline_module.run_fetch("FAKE", config, datasets={DatasetType.DIVIDENDS})
+
+    outcome = next(o for o in result.outcomes if o.dataset_type == DatasetType.DIVIDENDS)
+    assert outcome.status == "not_supported"
+    reported_types = {o.dataset_type for o in result.outcomes}
+    assert reported_types == {DatasetType.METADATA, DatasetType.DIVIDENDS}
+
+
+def test_run_fetch_datasets_filter_only_saves_selected_frames_locally(tmp_path, patch_resolver):
+    patch_resolver(FakeAdapter())
+    config = FinPipeConfig(data_dir=tmp_path)
+
+    pipeline_module.run_fetch("FAKE", config, datasets={DatasetType.PRICE})
+
+    instrument_dir = tmp_path / "equity" / "FAKE"
+    assert (instrument_dir / "price.csv").exists()
+    assert not (instrument_dir / "dividends.csv").exists()

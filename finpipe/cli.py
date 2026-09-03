@@ -11,6 +11,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 from finpipe.core.config import load_config
 from finpipe.core.exceptions import FinPipeError
@@ -46,6 +47,10 @@ _DISPLAY_ORDER = [
     DatasetType.MACRO_SERIES,
 ]
 
+# `metadata` is always fetched and isn't a selectable --datasets value.
+_SELECTABLE_DATASETS = [d for d in DatasetType if d != DatasetType.METADATA]
+_SELECTABLE_VALUES = {d.value for d in _SELECTABLE_DATASETS}
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -71,7 +76,33 @@ def build_parser() -> argparse.ArgumentParser:
     fetch_parser.add_argument(
         "--config", type=Path, default=None, help="Path to config.yaml (default: ./config.yaml)."
     )
+    fetch_parser.add_argument(
+        "--datasets",
+        nargs="+",
+        metavar="DATASET",
+        default=None,
+        help="Only fetch these dataset types (space-separated), e.g. "
+        "--datasets price dividends. Default: fetch everything the source supports. "
+        f"Valid values: {', '.join(sorted(_SELECTABLE_VALUES))}.",
+    )
     return parser
+
+
+def _parse_dataset_selection(names: Optional[list[str]]) -> Optional[set[DatasetType]]:
+    """Validate and convert `--datasets` values to a `DatasetType` set.
+
+    Returns `None` (meaning "fetch everything") when `names` is `None`, so
+    the default no-`--datasets` behavior is unchanged.
+    """
+    if names is None:
+        return None
+    invalid = [n for n in names if n not in _SELECTABLE_VALUES]
+    if invalid:
+        raise FinPipeError(
+            f"Unknown dataset name(s): {', '.join(invalid)}. "
+            f"Valid options: {', '.join(sorted(_SELECTABLE_VALUES))}."
+        )
+    return {DatasetType(n) for n in names}
 
 
 def _print_summary(result: FetchResult) -> None:
@@ -110,9 +141,12 @@ def _print_summary(result: FetchResult) -> None:
 
 
 def _cmd_fetch(args: argparse.Namespace) -> int:
-    config = load_config(args.config)
     try:
-        result = run_fetch(args.symbol, config, export_to_sheets=args.sheets)
+        selected_datasets = _parse_dataset_selection(args.datasets)
+        config = load_config(args.config)
+        result = run_fetch(
+            args.symbol, config, export_to_sheets=args.sheets, datasets=selected_datasets
+        )
     except FinPipeError as exc:
         print(f"Error: {exc}")
         return 1

@@ -25,3 +25,7 @@ class SourceError(FinPipeError):
 
 class ExportError(FinPipeError):
     """Raised when the Google Sheets export cannot complete."""
+
+
+class ConfigError(FinPipeError):
+    """Raised when config.yaml contains an invalid or unrecognized value."""
